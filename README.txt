@@ -1,8 +1,7 @@
 <!-- ... existing code ... -->
 ========================================================================
-             ENTERPRISE AI INFRASTRUCTURE SIZING TOOL
+ENTERPRISE AI INFRASTRUCTURE SIZING TOOL
 ========================================================================
-
 An interactive, high-performance web platform designed for AI systems engineers, 
 data center architects, and infrastructure specialists to size, model, and plan 
 accelerated computing clusters (compute, high-speed network fabric, thermal, 
