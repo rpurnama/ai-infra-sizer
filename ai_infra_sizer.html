@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enterprise AI Infrastructure Sizer</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js for visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              950: '#020617',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans p-4 md:p-6 lg:p-8 min-h-screen">
+
+  <!-- HEADER BAR -->
+  <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-5 mb-6 gap-4">
+    <div>
+      <div class="flex items-center space-x-3">
+        <div class="bg-emerald-500 p-2 rounded-lg text-slate-950 font-bold shadow-lg shadow-emerald-500/20">
+          <i data-lucide="network" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight flex items-center gap-2">
+            Enterprise AI Infrastructure Sizer
+            <span class="text-xs font-semibold px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+              Estimated Design
+            </span>
+          </h1>
+          <p class="text-xs md:text-sm text-slate-400 mt-1">
+            High-Performance Compute Topology, Network Fabric & Data Center Planner
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-3 w-full md:w-auto">
+      <button 
+        id="btnCopySpec"
+        onclick="copySpecSheet()"
+        className="flex-1 md:flex-none flex items-center justify-center space-x-1.5 px-3 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md border border-slate-700 transition"
+        class="flex-1 md:flex-none flex items-center justify-center space-x-1.5 px-3 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md border border-slate-700 transition"
+      >
+        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+        <span id="copyBtnText">Copy Spec Sheet</span>
+      </button>
+      <button 
+        onclick="exportJson()"
+        class="flex-1 md:flex-none flex items-center justify-center space-x-2 px-4 py-2 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-slate-950 rounded-md shadow-lg shadow-emerald-500/20 transition"
+      >
+        <i data-lucide="download" class="w-4 h-4"></i>
+        <span>Export Config JSON</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT GRID -->
+  <main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+    
+    <!-- LEFT PANEL: INPUT CONFIGURATION (5 COLS) -->
+    <section class="lg:col-span-5 space-y-6">
+      
+      <!-- COMPUTE NODE SIZING -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
+        <h2 class="text-base font-bold text-slate-200 flex items-center space-x-2 border-b border-slate-800 pb-3 mb-4">
+          <i data-lucide="cpu" class="w-4 h-4 text-emerald-400"></i>
+          <span>Compute Node & GPU Sizing</span>
+        </h2>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">
+              Accelerator System Reference Architecture
+            </label>
+            <select 
+              id="presetSelect" 
+              onchange="onPresetChange(this.value)"
+              class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            >
+              <option value="H100-HGX">H100 8-GPU System</option>
+              <option value="H200-HGX">H200 8-GPU System</option>
+              <option value="B200-HGX">B200 8-GPU System</option>
+              <option value="GB200-NVL72">GB200 NVL72 Rack-Scale System</option>
+              <option value="CUSTOM">Custom Accelerator Node</option>
+            </select>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-xs font-semibold text-slate-300">GPU Nodes / Servers Count</label>
+              <span id="badgeServerCount" class="text-xs font-bold text-emerald-400 bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800 font-mono">
+                64 Servers (512 GPUs)
+              </span>
+            </div>
+            
+            <div class="flex space-x-2 mb-2">
+              <input 
+                type="number"
+                id="inputNodeCount"
+                min="1"
+                max="4096"
+                value="64"
+                oninput="onNodeCountChange(this.value)"
+                class="w-full bg-slate-950 border border-slate-700 font-bold font-mono text-emerald-400 rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              />
+            </div>
+
+            <div class="flex flex-wrap gap-1.5">
+              <button onclick="setQuickNodeCount(8)" class="node-btn px-2 py-1 text-xs font-mono rounded border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700">8 Nodes</button>
+              <button onclick="setQuickNodeCount(16)" class="node-btn px-2 py-1 text-xs font-mono rounded border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700">16 Nodes</button>
+              <button onclick="setQuickNodeCount(32)" class="node-btn px-2 py-1 text-xs font-mono rounded border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700">32 Nodes</button>
+              <button onclick="setQuickNodeCount(64)" class="node-btn px-2 py-1 text-xs font-mono rounded border border-emerald-400 bg-emerald-500 text-slate-950 font-bold">64 Nodes</button>
+              <button onclick="setQuickNodeCount(128)" class="node-btn px-2 py-1 text-xs font-mono rounded border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700">128 Nodes</button>
+              <button onclick="setQuickNodeCount(256)" class="node-btn px-2 py-1 text-xs font-mono rounded border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700">256 Nodes</button>
+              <button onclick="setQuickNodeCount(512)" class="node-btn px-2 py-1 text-xs font-mono rounded border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700">512 Nodes</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 pt-2">
+            <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+              <span class="text-[11px] text-slate-400 block">GPUs / Server</span>
+              <input 
+                type="number" 
+                id="inputGpuPerNode"
+                value="8"
+                disabled
+                oninput="onCustomParamChange()"
+                class="w-full bg-transparent font-semibold text-slate-200 text-sm focus:outline-none disabled:opacity-75"
+              />
+            </div>
+            <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+              <span class="text-[11px] text-slate-400 block">Node Power (kW)</span>
+              <input 
+                type="number" 
+                step="0.1"
+                id="inputNodePower"
+                value="10.2"
+                disabled
+                oninput="onCustomParamChange()"
+                class="w-full bg-transparent font-semibold text-slate-200 text-sm focus:outline-none disabled:opacity-75"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPUTE & STORAGE FABRIC -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
+        <h2 class="text-base font-bold text-slate-200 flex items-center space-x-2 border-b border-slate-800 pb-3 mb-4">
+          <i data-lucide="network" class="w-4 h-4 text-cyan-400"></i>
+          <span>Compute & Storage Fabric Configuration</span>
+        </h2>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">
+              High-Speed Fabric Infrastructure
+            </label>
+            <select 
+              id="fabricSelect"
+              onchange="onFabricChange(this.value)"
+              class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+            >
+              <option value="IB-Q2">Quantum-2 InfiniBand (400G)</option>
+              <option value="IB-QX800">Quantum-X800 InfiniBand (800G)</option>
+              <option value="ETH-SPEC4">Spectrum-4 Ethernet (400G)</option>
+              <option value="ETH-SPECX5600">Spectrum-X SN5600 Ethernet (800G)</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Switch Radix (Ports)</label>
+              <select 
+                id="switchPortsSelect"
+                onchange="calculateAndRender()"
+                class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-lg p-2 text-xs focus:outline-none"
+              >
+                <option value="32">32 Ports</option>
+                <option value="64" selected>64 Ports</option>
+                <option value="128">128 Ports</option>
+                <option value="144">144 Ports</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Fabric Blocking Ratio</label>
+              <select 
+                id="oversubscriptionSelect"
+                onchange="calculateAndRender()"
+                class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-lg p-2 text-xs focus:outline-none"
+              >
+                <option value="1:1" selected>1:1 Non-Blocking</option>
+                <option value="2:1">2:1 Oversubscribed</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FACILITY & POWER CONSTRAINTS -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
+        <h2 class="text-base font-bold text-slate-200 flex items-center space-x-2 border-b border-slate-800 pb-3 mb-4">
+          <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+          <span>Facility Electrical & Rack Constraints</span>
+        </h2>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">PUE Efficiency Ratio</label>
+            <input 
+              type="number" 
+              step="0.05"
+              min="1.0"
+              max="2.5"
+              id="inputPue"
+              value="1.35"
+              oninput="calculateAndRender()"
+              class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-lg p-2 text-sm focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Max kW / Rack Envelope</label>
+            <input 
+              type="number" 
+              id="inputMaxKwPerRack"
+              value="40"
+              oninput="calculateAndRender()"
+              class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-lg p-2 text-sm focus:outline-none"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL: DASHBOARD & TOPOLOGY (7 COLS) -->
+    <section class="lg:col-span-7 space-y-6">
+      
+      <!-- KPI METRIC CARDS -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl relative overflow-hidden">
+          <div class="absolute top-0 right-0 p-3 text-slate-800">
+            <i data-lucide="server" class="w-8 h-8"></i>
+          </div>
+          <span class="text-xs font-medium text-slate-400 uppercase tracking-wider block">GPU Servers</span>
+          <span id="kpiGpuServers" class="text-2xl font-black text-white mt-1 block font-mono">64</span>
+          <span id="kpiTotalGpus" class="text-[11px] text-emerald-400 font-medium mt-1 block">512 GPUs Total</span>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl relative overflow-hidden">
+          <div class="absolute top-0 right-0 p-3 text-slate-800">
+            <i data-lucide="network" class="w-8 h-8"></i>
+          </div>
+          <span class="text-xs font-medium text-slate-400 uppercase tracking-wider block">Compute Switches</span>
+          <span id="kpiComputeSwitches" class="text-2xl font-black text-cyan-400 mt-1 block font-mono">24</span>
+          <span id="kpiSwitchSubtext" class="text-[11px] text-slate-400 mt-1 block">16 Leaf / 8 Spine</span>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl relative overflow-hidden">
+          <div class="absolute top-0 right-0 p-3 text-slate-800">
+            <i data-lucide="zap" class="w-8 h-8"></i>
+          </div>
+          <span class="text-xs font-medium text-slate-400 uppercase tracking-wider block">Facility Power</span>
+          <span id="kpiFacilityPower" class="text-2xl font-black text-amber-400 mt-1 block font-mono">920 kW</span>
+          <span id="kpiPowerSubtext" class="text-[11px] text-slate-400 mt-1 block">968 kVA @ 1.35 PUE</span>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl relative overflow-hidden">
+          <div class="absolute top-0 right-0 p-3 text-slate-800">
+            <i data-lucide="layers" class="w-8 h-8"></i>
+          </div>
+          <span class="text-xs font-medium text-slate-400 uppercase tracking-wider block">Total Racks</span>
+          <span id="kpiTotalRacks" class="text-2xl font-black text-indigo-400 mt-1 block font-mono">18</span>
+          <span id="kpiFootprintSubtext" class="text-[11px] text-slate-400 mt-1 block">~576 sq ft floor</span>
+        </div>
+      </div>
+
+      <!-- DYNAMIC TOPOLOGY VISUALIZER -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 mb-4 gap-2">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="eye" class="w-4 h-4 text-emerald-400"></i>
+            <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider">
+              Live Scaled Network Topology Visualizer
+            </h3>
+          </div>
+          <div class="flex items-center space-x-1.5 bg-slate-950 p-1 rounded-lg border border-slate-800">
+            <button id="topoBtnFull" onclick="setTopoViewMode('FULL')" class="px-2.5 py-1 text-xs font-semibold rounded bg-emerald-500 text-slate-950">Full Fat-Tree</button>
+            <button id="topoBtnRail" onclick="setTopoViewMode('RAIL')" class="px-2.5 py-1 text-xs font-semibold rounded text-slate-400 hover:text-slate-200">Rail Focus</button>
+            <button id="topoBtnStorage" onclick="setTopoViewMode('STORAGE')" class="px-2.5 py-1 text-xs font-semibold rounded text-slate-400 hover:text-slate-200">Storage Fabric</button>
+          </div>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800/80 rounded-lg p-4 flex flex-col items-center justify-center relative min-h-[320px]">
+          <svg id="topoSvg" viewBox="0 0 800 340" class="w-full h-auto max-h-[360px]"></svg>
+
+          <div class="absolute bottom-2 left-4 right-4 flex justify-between items-center text-[11px] text-slate-400 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-md">
+            <span>Bandwidth Payload: <strong id="barBandwidthPayload" class="text-emerald-400">204.8 Tbps</strong></span>
+            <span>SU Count: <strong id="barSuCount" class="text-cyan-400">2 Units</strong> (32 Nodes/SU)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- DETAILED SPECIFICATION SUMMARY -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
+        <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+          <span class="flex items-center gap-2">
+            <i data-lucide="network" class="w-4 h-4 text-cyan-400"></i>
+            Fabric & Cable Sizing Summary
+          </span>
+          <span id="badgeFabricType" class="text-xs font-mono font-normal bg-cyan-950 text-cyan-300 border border-cyan-800 px-2 py-0.5 rounded">
+            InfiniBand
+          </span>
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs py-1.5 border-b border-slate-800">
+              <span class="text-slate-400">Total GPU Servers:</span>
+              <span id="specNodeCount" class="font-semibold text-slate-200">64 Nodes</span>
+            </div>
+            <div class="flex justify-between text-xs py-1.5 border-b border-slate-800">
+              <span class="text-slate-400">Scalable Units (SU):</span>
+              <span id="specSuCount" class="font-semibold text-slate-200">2 SU</span>
+            </div>
+            <div class="flex justify-between text-xs py-1.5 border-b border-slate-800">
+              <span class="text-slate-400">Compute Leaf Switches:</span>
+              <span id="specLeafSwitches" class="font-semibold text-slate-200">16</span>
+            </div>
+            <div class="flex justify-between text-xs py-1.5 border-b border-slate-800">
+              <span class="text-slate-400">Compute Spine Switches:</span>
+              <span id="specSpineSwitches" class="font-semibold text-slate-200">8</span>
+            </div>
+            <div class="flex justify-between text-xs py-1.5 border-b border-slate-800">
+              <span class="text-slate-400">Storage Switches:</span>
+              <span id="specStorageSwitches" class="font-semibold text-slate-200">4</span>
+            </div>
+            <div class="flex justify-between text-xs py-1.5">
+              <span class="text-slate-400">Management Switches:</span>
+              <span id="specMgmtSwitches" class="font-semibold text-slate-200">3</span>
+            </div>
+          </div>
+
+          <div class="space-y-2 bg-slate-950 p-3.5 rounded-lg border border-slate-800/80">
+            <h4 class="text-xs font-bold text-slate-300 mb-2">Transceivers & Cabling</h4>
+            <div class="flex justify-between text-xs py-1">
+              <span class="text-slate-400">Optical Modules / Transceivers:</span>
+              <span id="specTransceivers" class="font-mono text-cyan-400 font-bold">1536</span>
+            </div>
+            <div class="flex justify-between text-xs py-1">
+              <span class="text-slate-400">Active Optical Cables (AOC):</span>
+              <span id="specCables" class="font-mono text-cyan-400 font-bold">768</span>
+            </div>
+            <div class="flex justify-between text-xs py-1 border-t border-slate-800 pt-2 mt-1">
+              <span class="text-slate-400">Fabric Blocking Mode:</span>
+              <span id="specBlockingRatio" class="font-bold text-slate-200">1:1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POWER & THERMAL CHARTS -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2 mb-3">
+              <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+              Electrical Load Breakdown (kW)
+            </h3>
+            <div class="h-44 w-full">
+              <canvas id="powerChart"></canvas>
+            </div>
+          </div>
+          <div class="text-[11px] text-slate-400 border-t border-slate-800 pt-3 mt-2 flex justify-between">
+            <span>IT Payload: <strong id="lblItPayload">682 kW</strong></span>
+            <span>Facility Power: <strong id="lblFacPower">920 kW</strong></span>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2 mb-4">
+              <i data-lucide="flame" class="w-4 h-4 text-rose-400"></i>
+              Thermal Output & Cooling Load
+            </h3>
+
+            <div class="space-y-4">
+              <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+                <span class="text-xs text-slate-400 block">Total Heat Generation</span>
+                <span id="lblHeatBtu" class="text-xl font-mono font-bold text-rose-400">
+                  2,326,450 <span class="text-xs font-sans text-slate-400">BTU/hr</span>
+                </span>
+              </div>
+
+              <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+                <span class="text-xs text-slate-400 block">Cooling Capacity Required</span>
+                <span id="lblCoolingTons" class="text-xl font-mono font-bold text-blue-400">
+                  194 <span class="text-xs font-sans text-slate-400">Tons CRAC/CRAH</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-[11px] text-slate-400 border-t border-slate-800 pt-3 mt-4">
+            <span id="lblCoolingRec">Recommendation: High-Density Air Cooling / Rear-Door Heat Exchangers</span>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- APPLICATION SCRIPT LOGIC -->
+  <script>
+    // PRESET CONSTANTS
+    const PRESET_NODES = {
+      'H100-HGX': { name: 'H100 8-GPU System', gpusPerNode: 8, powerKw: 10.2, ru: 8, storageNics: 2 },
+      'H200-HGX': { name: 'H200 8-GPU System', gpusPerNode: 8, powerKw: 10.2, ru: 8, storageNics: 2 },
+      'B200-HGX': { name: 'B200 8-GPU System', gpusPerNode: 8, powerKw: 14.3, ru: 10, storageNics: 2 },
+      'GB200-NVL72': { name: 'GB200 NVL72 Rack-Scale System', gpusPerNode: 72, powerKw: 120.0, ru: 44, storageNics: 18 },
+      'CUSTOM': { name: 'Custom Accelerator Node', gpusPerNode: 8, powerKw: 10.0, ru: 8, storageNics: 2 }
+    };
+
+    const FABRIC_TYPES = {
+      'IB-Q2': { name: 'Quantum-2 InfiniBand (400G)', type: 'InfiniBand', speedGbs: 400, defaultPorts: 64 },
+      'IB-QX800': { name: 'Quantum-X800 InfiniBand (800G)', type: 'InfiniBand', speedGbs: 800, defaultPorts: 144 },
+      'ETH-SPEC4': { name: 'Spectrum-4 Ethernet (400G)', type: 'Ethernet', speedGbs: 400, defaultPorts: 64 },
+      'ETH-SPECX5600': { name: 'Spectrum-X SN5600 Ethernet (800G)', type: 'Ethernet', speedGbs: 800, defaultPorts: 64 }
+    };
+
+    // STATE VARIABLES
+    let topoViewMode = 'FULL';
+    let selectedElement = null;
+    let powerChart = null;
+    let currentCalculations = {};
+
+    window.onload = function() {
+      lucide.createIcons();
+      initChart();
+      calculateAndRender();
+    };
+
+    function initChart() {
+      const ctx = document.getElementById('powerChart').getContext('2d');
+      powerChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Compute', 'Switching', 'PUE Loss'],
+          datasets: [{
+            data: [0, 0, 0],
+            backgroundColor: ['#10B981', '#38BDF8', '#F59E0B'],
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { display: false } },
+            y: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e293b' } }
+          }
+        }
+      });
+    }
+
+    function onPresetChange(val) {
+      const preset = PRESET_NODES[val];
+      const isCustom = val === 'CUSTOM';
+
+      document.getElementById('inputGpuPerNode').disabled = !isCustom;
+      document.getElementById('inputNodePower').disabled = !isCustom;
+
+      if (!isCustom) {
+        document.getElementById('inputGpuPerNode').value = preset.gpusPerNode;
+        document.getElementById('inputNodePower').value = preset.powerKw;
+      }
+      calculateAndRender();
+    }
+
+    function onFabricChange(val) {
+      document.getElementById('switchPortsSelect').value = FABRIC_TYPES[val].defaultPorts;
+      calculateAndRender();
+    }
+
+    function onNodeCountChange(val) {
+      const count = Math.max(1, parseInt(val) || 1);
+      updateNodeBtnStyles(count);
+      calculateAndRender();
+    }
+
+    function setQuickNodeCount(count) {
+      document.getElementById('inputNodeCount').value = count;
+      updateNodeBtnStyles(count);
+      calculateAndRender();
+    }
+
+    function updateNodeBtnStyles(count) {
+      const btns = document.querySelectorAll('.node-btn');
+      btns.forEach(btn => {
+        const btnVal = parseInt(btn.innerText);
+        if (btnVal === count) {
+          btn.className = 'node-btn px-2 py-1 text-xs font-mono rounded border border-emerald-400 bg-emerald-500 text-slate-950 font-bold';
+        } else {
+          btn.className = 'node-btn px-2 py-1 text-xs font-mono rounded border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700';
+        }
+      });
+    }
+
+    function onCustomParamChange() {
+      calculateAndRender();
+    }
+
+    function setTopoViewMode(mode) {
+      topoViewMode = mode;
+      document.getElementById('topoBtnFull').className = `px-2.5 py-1 text-xs font-semibold rounded ${mode === 'FULL' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-slate-200'}`;
+      document.getElementById('topoBtnRail').className = `px-2.5 py-1 text-xs font-semibold rounded ${mode === 'RAIL' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-slate-200'}`;
+      document.getElementById('topoBtnStorage').className = `px-2.5 py-1 text-xs font-semibold rounded ${mode === 'STORAGE' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-slate-200'}`;
+      renderTopologySVG();
+    }
+
+    function calculateAndRender() {
+      const presetKey = document.getElementById('presetSelect').value;
+      const fabricKey = document.getElementById('fabricSelect').value;
+      const nodeCount = Math.max(1, parseInt(document.getElementById('inputNodeCount').value) || 1);
+      const gpuPerNode = parseInt(document.getElementById('inputGpuPerNode').value) || 8;
+      const nodePowerKw = parseFloat(document.getElementById('inputNodePower').value) || 10.2;
+      const switchPorts = parseInt(document.getElementById('switchPortsSelect').value) || 64;
+      const oversubscription = document.getElementById('oversubscriptionSelect').value;
+      const pue = parseFloat(document.getElementById('inputPue').value) || 1.35;
+      const maxKwPerRack = parseFloat(document.getElementById('inputMaxKwPerRack').value) || 40;
+
+      const totalGpus = nodeCount * gpuPerNode;
+      const computeNics = presetKey === 'GB200-NVL72' ? 72 : gpuPerNode;
+      const totalComputePorts = nodeCount * computeNics;
+      const fabricSpeedGbs = FABRIC_TYPES[fabricKey].speedGbs;
+      const totalBandwidthTbps = (totalComputePorts * fabricSpeedGbs) / 1000;
+
+      const nodesPerSu = Math.min(32, nodeCount);
+      const suCount = Math.max(1, Math.ceil(nodeCount / nodesPerSu));
+
+      const downlinksPerLeaf = switchPorts / 2;
+      const uplinksPerLeaf = oversubscription === '1:1' ? downlinksPerLeaf : Math.floor(downlinksPerLeaf / 2);
+
+      const computeLeafSwitches = Math.max(1, Math.ceil(totalComputePorts / downlinksPerLeaf));
+      const totalUplinks = computeLeafSwitches * uplinksPerLeaf;
+      const computeSpineSwitches = Math.max(1, Math.ceil(totalUplinks / switchPorts));
+      const totalComputeSwitches = computeLeafSwitches + computeSpineSwitches;
+
+      const computeTransceivers = (totalComputePorts * 2) + (totalUplinks * 2);
+      const fiberCables = Math.ceil(computeTransceivers / 2);
+
+      const storageNicsPerNode = PRESET_NODES[presetKey].storageNics;
+      const totalStoragePorts = nodeCount * storageNicsPerNode;
+      const storageSwitches = Math.max(2, Math.ceil((totalStoragePorts * 2) / 64));
+      const mgmtSwitches = Math.max(2, Math.ceil((nodeCount * 2) / 48));
+
+      let computeRacks = 0;
+      if (presetKey === 'GB200-NVL72') {
+        computeRacks = nodeCount;
+      } else {
+        const nodeRu = PRESET_NODES[presetKey].ru;
+        const nodesPerRackRu = Math.floor((42 - 4) / nodeRu);
+        const nodesPerRackKw = Math.floor(maxKwPerRack / nodePowerKw);
+        const nodesPerRack = Math.max(1, Math.min(nodesPerRackRu, nodesPerRackKw));
+        computeRacks = Math.ceil(nodeCount / nodesPerRack);
+      }
+
+      const networkRacks = Math.max(1, Math.ceil((totalComputeSwitches + storageSwitches + mgmtSwitches) / 20));
+      const totalRacks = computeRacks + networkRacks;
+
+      const ITComputePowerKw = nodeCount * nodePowerKw;
+      const NetworkPowerKw = (totalComputeSwitches + storageSwitches + mgmtSwitches) * 1.2;
+      const totalITPowerKw = ITComputePowerKw + NetworkPowerKw;
+      const facilityPowerKw = totalITPowerKw * pue;
+      const facilityKva = facilityPowerKw / 0.95;
+
+      const btuPerHour = totalITPowerKw * 3412.142;
+      const coolingTons = btuPerHour / 12000;
+      const totalSqFt = totalRacks * 32;
+
+      currentCalculations = {
+        nodeCount, totalGpus, totalBandwidthTbps, computeLeafSwitches, computeSpineSwitches,
+        totalComputeSwitches, storageSwitches, mgmtSwitches, suCount, nodesPerSu,
+        computeTransceivers, fiberCables, computeRacks, networkRacks, totalRacks,
+        totalITPowerKw, facilityPowerKw, facilityKva, btuPerHour, coolingTons, totalSqFt,
+        presetKey, fabricKey, oversubscription, pue, nodePowerKw, gpuPerNode
+      };
+
+      // UPDATE DOM METRICS
+      document.getElementById('badgeServerCount').innerText = `${nodeCount} Servers (${totalGpus} GPUs)`;
+      document.getElementById('kpiGpuServers').innerText = nodeCount;
+      document.getElementById('kpiTotalGpus').innerText = `${totalGpus} GPUs Total`;
+
+      document.getElementById('kpiComputeSwitches').innerText = totalComputeSwitches;
+      document.getElementById('kpiSwitchSubtext').innerText = `${computeLeafSwitches} Leaf / ${computeSpineSwitches} Spine`;
+
+      document.getElementById('kpiFacilityPower').innerText = `${Math.round(facilityPowerKw)} kW`;
+      document.getElementById('kpiPowerSubtext').innerText = `${Math.round(facilityKva)} kVA @ ${pue} PUE`;
+
+      document.getElementById('kpiTotalRacks').innerText = totalRacks;
+      document.getElementById('kpiFootprintSubtext').innerText = `~${totalSqFt} sq ft floor`;
+
+      document.getElementById('barBandwidthPayload').innerText = `${totalBandwidthTbps.toFixed(1)} Tbps`;
+      document.getElementById('barSuCount').innerText = `${suCount} Units`;
+
+      document.getElementById('badgeFabricType').innerText = FABRIC_TYPES[fabricKey].type;
+      document.getElementById('specNodeCount').innerText = `${nodeCount} Nodes`;
+      document.getElementById('specSuCount').innerText = `${suCount} SU`;
+      document.getElementById('specLeafSwitches').innerText = computeLeafSwitches;
+      document.getElementById('specSpineSwitches').innerText = computeSpineSwitches;
+      document.getElementById('specStorageSwitches').innerText = storageSwitches;
+      document.getElementById('specMgmtSwitches').innerText = mgmtSwitches;
+      document.getElementById('specTransceivers').innerText = computeTransceivers;
+      document.getElementById('specCables').innerText = fiberCables;
+      document.getElementById('specBlockingRatio').innerText = oversubscription;
+
+      document.getElementById('lblItPayload').innerText = `${Math.round(totalITPowerKw)} kW`;
+      document.getElementById('lblFacPower').innerText = `${Math.round(facilityPowerKw)} kW`;
+
+      document.getElementById('lblHeatBtu').innerHTML = `${Math.round(btuPerHour).toLocaleString()} <span class="text-xs font-sans text-slate-400">BTU/hr</span>`;
+      document.getElementById('lblCoolingTons').innerHTML = `${Math.round(coolingTons)} <span class="text-xs font-sans text-slate-400">Tons CRAC/CRAH</span>`;
+      document.getElementById('lblCoolingRec').innerText = `Recommendation: ${presetKey === 'GB200-NVL72' ? 'Direct-to-Chip Liquid Cooling Design' : 'High-Density Air Cooling / Rear-Door Heat Exchangers'}`;
+
+      // Update Chart
+      if (powerChart) {
+        powerChart.data.datasets[0].data = [
+          Math.round(ITComputePowerKw),
+          Math.round(NetworkPowerKw),
+          Math.round(facilityPowerKw - totalITPowerKw)
+        ];
+        powerChart.update();
+      }
+
+      renderTopologySVG();
+    }
+
+    function renderTopologySVG() {
+      const svg = document.getElementById('topoSvg');
+      const calc = currentCalculations;
+
+      const spineCount = Math.min(calc.computeSpineSwitches, 8);
+      const leafCount = Math.min(calc.computeLeafSwitches, 8);
+      const isLarge = calc.nodeCount > 16;
+      const nodeCount = isLarge ? Math.min(calc.suCount, 6) : Math.min(calc.nodeCount, 8);
+
+      let html = `
+        <line x1="40" y1="75" x2="760" y2="75" stroke="#1e293b" stroke-dasharray="4" />
+        <line x1="40" y1="175" x2="760" y2="175" stroke="#1e293b" stroke-dasharray="4" />
+        <text x="50" y="40" fill="#64748b" font-size="10" font-weight="bold">SPINE TIER (${calc.computeSpineSwitches} Switches)</text>
+        <text x="50" y="140" fill="#64748b" font-size="10" font-weight="bold">LEAF TIER (${calc.computeLeafSwitches} Switches)</text>
+        <text x="50" y="240" fill="#64748b" font-size="10" font-weight="bold">COMPUTE (${calc.nodeCount} Servers / ${calc.suCount} SUs)</text>
+      `;
+
+      // Spine to Leaf Links
+      for (let s = 0; s < spineCount; s++) {
+        const sX = 150 + (s * (500 / Math.max(1, spineCount - 1)));
+        for (let l = 0; l < leafCount; l++) {
+          const lX = 120 + (l * (560 / Math.max(1, leafCount - 1)));
+          const isSelected = selectedElement === `spine-${s}` || selectedElement === `leaf-${l}`;
+          html += `<line x1="${sX}" y1="60" x2="${lX}" y2="145" stroke="${isSelected ? '#38BDF8' : '#334155'}" stroke-width="${isSelected ? 2.5 : 1}" opacity="${topoViewMode === 'STORAGE' ? 0.2 : 0.8}" />`;
+        }
+      }
+
+      // Leaf to Node Links
+      for (let l = 0; l < leafCount; l++) {
+        const lX = 120 + (l * (560 / Math.max(1, leafCount - 1)));
+        for (let n = 0; n < nodeCount; n++) {
+          const nX = 100 + (n * (600 / Math.max(1, nodeCount - 1)));
+          const isSelected = selectedElement === `leaf-${l}` || selectedElement === `node-${n}`;
+          html += `<line x1="${lX}" y1="175" x2="${nX}" y2="255" stroke="${isSelected ? '#10B981' : topoViewMode === 'STORAGE' ? '#F59E0B' : '#1e293b'}" stroke-width="${isSelected ? 2 : 1}" />`;
+        }
+      }
+
+      // Render Spines
+      for (let s = 0; s < spineCount; s++) {
+        const x = 150 + (s * (500 / Math.max(1, spineCount - 1)));
+        const realCount = Math.ceil(calc.computeSpineSwitches / spineCount);
+        html += `
+          <g class="cursor-pointer" onmouseenter="onElementHover('spine-${s}')" onmouseleave="onElementHover(null)">
+            <rect x="${x - 30}" y="30" width="60" height="30" rx="6" fill="${selectedElement === `spine-${s}` ? '#0284c7' : '#0f172a'}" stroke="#38BDF8" stroke-width="2" />
+            <text x="${x}" y="49" text-anchor="middle" fill="#f8fafc" font-size="10" font-weight="bold">Spine ${s + 1}</text>
+            ${realCount > 1 ? `<text x="${x + 22}" y="32" text-anchor="middle" fill="#38BDF8" font-size="8" font-weight="bold">x${realCount}</text>` : ''}
+          </g>`;
+      }
+
+      // Render Leaves
+      for (let l = 0; l < leafCount; l++) {
+        const x = 120 + (l * (560 / Math.max(1, leafCount - 1)));
+        const realCount = Math.ceil(calc.computeLeafSwitches / leafCount);
+        const label = topoViewMode === 'STORAGE' ? `Storage ${l + 1}` : `Leaf ${l + 1}`;
+        html += `
+          <g class="cursor-pointer" onmouseenter="onElementHover('leaf-${l}')" onmouseleave="onElementHover(null)">
+            <rect x="${x - 35}" y="145" width="70" height="30" rx="6" fill="${selectedElement === `leaf-${l}` ? '#0d9488' : '#0f172a'}" stroke="#14b8a6" stroke-width="2" />
+            <text x="${x}" y="164" text-anchor="middle" fill="#f8fafc" font-size="10" font-weight="bold">${label}</text>
+            ${realCount > 1 ? `<text x="${x + 27}" y="147" text-anchor="middle" fill="#14b8a6" font-size="8" font-weight="bold">x${realCount}</text>` : ''}
+          </g>`;
+      }
+
+      // Render Nodes / SUs
+      for (let n = 0; n < nodeCount; n++) {
+        const x = 100 + (n * (600 / Math.max(1, nodeCount - 1)));
+        const label = isLarge ? `SU-${n + 1}` : `Node ${n + 1}`;
+        const sub = isLarge ? `${calc.nodesPerSu} Nodes` : `${calc.gpuPerNode}x GPU`;
+        html += `
+          <g class="cursor-pointer" onmouseenter="onElementHover('node-${n}')" onmouseleave="onElementHover(null)">
+            <rect x="${x - 32}" y="255" width="64" height="44" rx="6" fill="${selectedElement === `node-${n}` ? '#059669' : isLarge ? '#064e3b' : '#022c22'}" stroke="#10B981" stroke-width="${isLarge ? 2 : 1.5}" ${isLarge ? 'stroke-dasharray="3"' : ''} />
+            <text x="${x}" y="274" text-anchor="middle" fill="#f8fafc" font-size="10" font-weight="bold">${label}</text>
+            <text x="${x}" y="289" text-anchor="middle" fill="#6ee7b7" font-size="8">${sub}</text>
+          </g>`;
+      }
+
+      svg.innerHTML = html;
+    }
+
+    function onElementHover(id) {
+      selectedElement = id;
+      renderTopologySVG();
+    }
+
+    function exportJson() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentCalculations, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `AI_Infra_Sizing_${currentCalculations.totalGpus}GPUs.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function copySpecSheet() {
+      const text = `AI ACCELERATOR INFRASTRUCTURE SIZING SPECIFICATION SHEET
+Architecture: ${PRESET_NODES[currentCalculations.presetKey].name}
+Fabric: ${FABRIC_TYPES[currentCalculations.fabricKey].name} (${currentCalculations.oversubscription})
+GPU Nodes / Servers: ${currentCalculations.nodeCount} | Total Accelerators: ${currentCalculations.totalGpus}
+Total Fabric Compute Bandwidth: ${currentCalculations.totalBandwidthTbps.toFixed(1)} Tbps
+
+NETWORK FABRIC REQUIREMENTS:
+- Compute Leaf Switches: ${currentCalculations.computeLeafSwitches}
+- Compute Spine Switches: ${currentCalculations.computeSpineSwitches}
+- Storage Switches: ${currentCalculations.storageSwitches}
+- Management Switches: ${currentCalculations.mgmtSwitches}
+- Total Optical Modules: ${currentCalculations.computeTransceivers}
+
+FACILITY & POWER:
+- IT Power Payload: ${Math.round(currentCalculations.totalITPowerKw)} kW
+- Total Facility Power: ${Math.round(currentCalculations.facilityPowerKw)} kW (${Math.round(currentCalculations.facilityKva)} kVA)
+- Thermal Output: ${Math.round(currentCalculations.btuPerHour).toLocaleString()} BTU/hr (${Math.round(currentCalculations.coolingTons)} Tons Cooling)
+- Racks Required: ${currentCalculations.totalRacks} (${currentCalculations.computeRacks} Compute + ${currentCalculations.networkRacks} Fabric)`;
+
+      navigator.clipboard.writeText(text);
+      document.getElementById('copyBtnText').innerText = 'Copied Spec!';
+      setTimeout(() => {
+        document.getElementById('copyBtnText').innerText = 'Copy Spec Sheet';
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
